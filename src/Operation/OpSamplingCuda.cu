@@ -352,16 +352,17 @@ Tensor cumsumOpCudaImpl(const Tensor& self, int64_t dim) {
       thrust::inclusive_scan(thrust::cuda::par.on(stream), selfPtr + offset, selfPtr + offset + n, retPtr + offset);
     }
   } else {
+    using ComputeT = typename cuda::CudaComputeType<T>::type;
     thrust::for_each_n(thrust::cuda::par.on(stream), thrust::counting_iterator<int64_t>(0), outer * inner,
                        [=] __host__ __device__(int64_t row) {
                          int64_t o = row / inner;
                          int64_t inIdx = row % inner;
                          int64_t base = o * n * inner + inIdx;
 
-                         CudaT sum = 0;
+                         ComputeT sum = 0;
                          for (int64_t i = 0; i < n; i++) {
-                           sum += selfPtr[base + i * inner];
-                           retPtr[base + i * inner] = sum;
+                           sum += static_cast<ComputeT>(selfPtr[base + i * inner]);
+                           retPtr[base + i * inner] = static_cast<CudaT>(sum);
                          }
                        });
   }

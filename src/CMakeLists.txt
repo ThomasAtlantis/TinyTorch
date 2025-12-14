@@ -5,9 +5,20 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (TINYTORCH_USE_CUDA)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda --expt-relaxed-constexpr")
+    # Set CUDA path explicitly to avoid using wrong nvcc version
+    if (EXISTS "/usr/local/cuda")
+        set(CMAKE_CUDA_COMPILER "/usr/local/cuda/bin/nvcc")
+    endif ()
+    
     find_package(CUDAToolkit REQUIRED)
     enable_language(CUDA)
+    
+    # Check CUDA version and set flags accordingly
+    if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda --expt-relaxed-constexpr")
+    else ()
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
+    endif ()
 endif ()
 
 if (TINYTORCH_USE_NCCL)

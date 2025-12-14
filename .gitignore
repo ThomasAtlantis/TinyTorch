@@ -7,3 +7,4 @@ build
 cmake-build-*/
 CMakeSettings.json
 Testing
+*.model
