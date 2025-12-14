@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "Backend.h"
 #include "ProcessGroup.h"
 #include "TCPStore.h"
 
@@ -57,6 +58,9 @@ class DistributedProcessGroup {
     if (processGroup_) {
       processGroup_->shutdown();
       processGroup_.reset();
+      // Reset config
+      currentConfig_ = InitConfig();
+      currentBackend_ = UNDEFINED;
     }
   }
 
@@ -140,6 +144,8 @@ class DistributedProcessGroup {
   static std::shared_ptr<Store> createStore(const InitConfig& config);
 
   std::shared_ptr<ProcessGroup> processGroup_;
+  InitConfig currentConfig_;  // Store current config for comparison
+  BackendType currentBackend_;
 };
 
 }  // namespace tinytorch::distributed

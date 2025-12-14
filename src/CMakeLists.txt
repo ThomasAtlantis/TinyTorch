@@ -102,4 +102,7 @@ endif ()
 if (TINYTORCH_USE_NCCL)
     target_include_directories(${PROJECT_NAME} PUBLIC ${NCCL_INCLUDE_DIRS})
     target_link_libraries(${PROJECT_NAME} PUBLIC ${NCCL_LIBRARY})
+    # TCPStore uses std::thread, which requires pthread on Linux
+    find_package(Threads REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)
 endif ()

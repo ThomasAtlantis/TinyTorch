@@ -8,3 +8,4 @@ cmake-build-*/
 CMakeSettings.json
 Testing
 *.model
+*.gch

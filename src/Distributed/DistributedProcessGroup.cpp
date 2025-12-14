@@ -17,13 +17,39 @@ namespace tinytorch::distributed {
 
 bool DistributedProcessGroup::initProcessGroup(BackendType backend, const std::string& initMethod, int rank,
                                                int worldSize, std::chrono::milliseconds timeout, bool waitWorkers) {
-  if (processGroup_ != nullptr) {
-    LOGE("ProcessGroup already initialized");
-    return false;
-  }
   auto config = parseInitString(initMethod, rank, worldSize);
   config.timeout = timeout;
   config.waitWorkers = waitWorkers;
+
+  // If already initialized, check if parameters match
+  if (processGroup_ != nullptr) {
+    // Check if backend matches
+    if (currentBackend_ != backend) {
+      LOGE("ProcessGroup already initialized with different backend (current: %s, requested: %s)",
+           backendTypeToString(currentBackend_), backendTypeToString(backend));
+      return false;
+    }
+    // Check if config matches
+    if (currentConfig_.method != config.method || currentConfig_.rank != config.rank ||
+        currentConfig_.worldSize != config.worldSize) {
+      LOGE("ProcessGroup already initialized with different config");
+      return false;
+    }
+    // For TCP/ENV, check master address and port
+    if ((config.method == InitMethod::TCP || config.method == InitMethod::ENV) &&
+        (currentConfig_.masterAddr != config.masterAddr || currentConfig_.masterPort != config.masterPort)) {
+      LOGE("ProcessGroup already initialized with different master address/port");
+      return false;
+    }
+    // For FILE, check file path
+    if (config.method == InitMethod::FILE && currentConfig_.filePath != config.filePath) {
+      LOGE("ProcessGroup already initialized with different file path");
+      return false;
+    }
+    // Parameters match, reuse existing ProcessGroup
+    LOGD("ProcessGroup already initialized with matching parameters, reusing it");
+    return true;
+  }
 
   if (config.rank == -1 || config.worldSize == -1) {
     LOGE("Invalid ProcessGroup config");
@@ -66,6 +92,10 @@ bool DistributedProcessGroup::initProcessGroup(BackendType backend, const std::s
       return false;
     }
   }
+
+  // Store current config and backend for future comparison
+  currentConfig_ = config;
+  currentBackend_ = backend;
 
   LOGD("Init ProcessGroup success, backend=%s", backendTypeToString(backend));
   return true;
